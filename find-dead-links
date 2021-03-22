@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import requests
+import re
+from sys import argv
+
+
+def web_crawly(parent_link, depth=0): # search this link and all links on this web page if any, 
+    depth-=1
+
+    if not baddy_link(parent_link) and depth >= -1:
+        for child_link in capture_child_links(parent_link):
+            web_crawly(child_link, depth)
+
+def baddy_link(link): #is the link a bad one
+    try:
+        r = requests.get(link)
+        if r.status_code not in [200, 302]:
+            print("Bad Link: {link}".format(link=link))
+            return True
+        else:
+
+            return False
+    except:
+        print("Bad Link: {link}".format(link=link))
+        return True
+
+def capture_child_links(parent_link):
+    r = requests.get(parent_link)
+    childs = re.findall('href=[\'"]?([^\'" >]+)',str(r.content))
+    child_links = []
+    for c in childs:
+        if 'http' != c[0:4]:
+            c = parent_link + c
+        child_links.append(c)
+    return child_links
+
+
+if len(argv) >= 2:
+    if len(argv) == 3:
+        web_crawly(argv[2],int(argv[1]))
+    else:
+        web_crawly(argv[1])
+else:
+    print("bad arguments: give depth then link, or just link")
